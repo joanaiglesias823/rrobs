@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="rrobs">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#391212">
+<title>rrobs</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon-512.svg">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --or:#74342B;--pk:#8FA4D1;--bur:#391212;--cr:#EDDBC2;
+  --bg:#EDDBC2;--ink:#391212;--soft:#74342B;--muted:#9A7060;
+  --card:#FAF5EC;--border:rgba(57,18,18,0.13);--radius:14px;
+  --font-d:'Archivo Black',sans-serif;--font-b:'Archivo',sans-serif;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font-b);background:var(--bg);color:var(--ink)}
+.app{height:100vh;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.topbar{background:var(--bur);flex-shrink:0;overflow:hidden;position:relative}
+.stripe-bg{position:absolute;inset:0;background:repeating-linear-gradient(100deg,var(--or) 0,var(--or) 8px,transparent 8px,transparent 22px,var(--pk) 22px,var(--pk) 30px,transparent 30px,transparent 44px);opacity:.3;pointer-events:none}
+.topbar-inner{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;padding-top:max(14px,env(safe-area-inset-top))}
+.logo{font-family:var(--font-d);font-size:22px;color:var(--cr);letter-spacing:2px}
+.logo span{color:var(--or)}
+.tabs{display:flex;gap:2px;background:rgba(255,255,255,.1);padding:3px;border-radius:30px}
+.tab{padding:6px 16px;font-size:12px;font-family:var(--font-b);font-weight:500;border:none;background:none;cursor:pointer;border-radius:30px;color:rgba(237,219,194,.6);transition:all .18s;white-space:nowrap}
+.tab.on{background:var(--cr);color:var(--bur)}
+.content{flex:1;overflow-y:auto;padding:14px;-webkit-overflow-scrolling:touch;padding-bottom:max(14px,env(safe-area-inset-bottom))}
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap input{width:100%;padding:11px 14px 11px 40px;border:1.5px solid var(--border);border-radius:30px;font-size:15px;font-family:var(--font-b);background:var(--card);color:var(--ink);outline:none;-webkit-appearance:none}
+.search-wrap input:focus{border-color:var(--or)}
+.search-ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--muted);pointer-events:none}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none;margin-bottom:4px}
+.chips::-webkit-scrollbar{display:none}
+.chip{padding:6px 14px;font-size:12px;font-weight:500;border:1.5px solid var(--border);background:var(--card);border-radius:30px;cursor:pointer;white-space:nowrap;color:var(--soft);font-family:var(--font-b);flex-shrink:0;transition:all .15s}
+.chip.on{background:var(--or);border-color:var(--or);color:var(--cr)}
+.color-chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none;margin-bottom:4px;align-items:center}
+.color-chips::-webkit-scrollbar{display:none}
+.color-chip{width:26px;height:26px;border-radius:50%;border:2.5px solid transparent;cursor:pointer;flex-shrink:0;transition:transform .15s,border-color .15s}
+.color-chip.on{border-color:var(--ink);transform:scale(1.18)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px}
+.lcard{border-radius:var(--radius);overflow:hidden;background:var(--card);border:1.5px solid var(--border);cursor:pointer;transition:transform .15s;position:relative;-webkit-user-select:none}
+.lcard:active{transform:scale(.97)}
+.lphoto{width:100%;aspect-ratio:3/4;object-fit:cover;display:block}
+.lph-pl{width:100%;aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;font-size:40px;background:repeating-linear-gradient(135deg,#E8D5C0 0,#E8D5C0 10px,#DFC9B0 10px,#DFC9B0 20px)}
+.lmeta{padding:9px 11px;border-top:1.5px solid var(--border)}
+.ltitle-row{display:flex;align-items:center;gap:4px}
+.ltitle{font-family:var(--font-d);font-size:12px;color:var(--ink);line-height:1.2;flex:1}
+.edit-btn{background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);padding:2px 4px;flex-shrink:0;opacity:.7}
+.ltags{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}
+.tag{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500}
+.tag-or{background:#E8D0C8;color:var(--or)}
+.tag-pk{background:#D4DFED;color:#4A6A9D}
+.tag-br{background:#E0D0C8;color:var(--soft)}
+.tag-def{background:#E8E0D0;color:var(--muted)}
+.delx{position:absolute;top:7px;right:7px;width:26px;height:26px;border-radius:50%;background:rgba(237,219,194,.95);border:none;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-weight:700}
+.photo-badge{position:absolute;top:7px;left:7px;background:rgba(57,18,18,.75);color:var(--cr);font-size:10px;font-weight:500;padding:3px 7px;border-radius:20px;font-family:var(--font-b)}
+.addcard{border-radius:var(--radius);border:2px dashed var(--or);background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:3/4;cursor:pointer;gap:8px;padding:16px;transition:background .15s}
+.addcard:active{background:rgba(116,52,43,.08)}
+.add-ico{width:44px;height:44px;border-radius:50%;background:var(--or);display:flex;align-items:center;justify-content:center;color:var(--cr);font-size:22px;font-weight:700}
+.add-lbl{font-size:12px;font-weight:500;color:var(--or);text-align:center;line-height:1.4}
+.empty{display:flex;flex-direction:column;align-items:center;padding:60px 20px;gap:12px;text-align:center}
+.empty-ico{font-size:48px;opacity:.25}
+.empty-t{font-family:var(--font-d);font-size:16px}
+.empty-s{font-size:13px;color:var(--muted);max-width:220px;line-height:1.5}
+.overlay{position:fixed;inset:0;background:rgba(57,18,18,.45);z-index:20;display:flex;align-items:flex-end}
+.sheet{background:var(--card);border-radius:var(--radius) var(--radius) 0 0;padding:18px;padding-bottom:max(18px,env(safe-area-inset-bottom));width:100%;animation:up .22s ease;max-height:92vh;overflow-y:auto}
+@keyframes up{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+.handle{width:36px;height:3px;background:var(--border);border-radius:3px;margin:0 auto 14px}
+.sh-title{font-family:var(--font-d);font-size:16px;margin-bottom:12px;color:var(--ink)}
+.photo-upload-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:500;margin-bottom:8px;display:block}
+.photo-source-btns{display:flex;gap:8px;margin-bottom:10px}
+.src-btn{flex:1;padding:12px 8px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);font-size:13px;font-family:var(--font-b);color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:border-color .15s}
+.src-btn:active{border-color:var(--or);background:rgba(116,52,43,.06)}
+.src-ico{font-size:24px}
+.src-lbl{font-size:11px;color:var(--muted)}
+.photos-scroll{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;margin-bottom:4px}
+.photos-scroll::-webkit-scrollbar{display:none}
+.photo-thumb{width:80px;height:90px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1.5px solid var(--border);display:block}
+.photo-thumb-wrap{position:relative;flex-shrink:0}
+.photo-thumb-del{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--bur);color:var(--cr);border:none;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.add-more-photo{width:80px;height:90px;border-radius:10px;border:2px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;flex-shrink:0;background:var(--bg)}
+.add-more-photo span{font-size:22px;color:var(--muted)}
+.add-more-photo small{font-size:10px;color:var(--muted)}
+.field{margin-top:11px}
+.field label{font-size:11px;color:var(--muted);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.6px;font-weight:500}
+.field input{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-family:var(--font-b);background:var(--bg);color:var(--ink);outline:none;-webkit-appearance:none}
+.field input:focus{border-color:var(--or)}
+.occ-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;align-items:center}
+.occ-btn{padding:6px 12px;font-size:12px;font-weight:500;border:1.5px solid var(--border);background:var(--bg);border-radius:20px;cursor:pointer;color:var(--muted);font-family:var(--font-b);transition:all .15s}
+.occ-btn.on{background:var(--bur);border-color:var(--bur);color:var(--cr)}
+.occ-add-btn{padding:5px 11px;font-size:18px;border:1.5px dashed var(--border);background:transparent;border-radius:20px;cursor:pointer;color:var(--muted);line-height:1}
+.sh-actions{display:flex;gap:8px;margin-top:16px}
+.btn-cancel{flex:1;padding:13px;border:1.5px solid var(--border);border-radius:10px;background:none;font-size:14px;cursor:pointer;font-family:var(--font-b);color:var(--muted)}
+.btn-save{flex:2;padding:13px;border:none;border-radius:10px;background:var(--or);color:var(--cr);font-size:14px;font-family:var(--font-d);cursor:pointer;letter-spacing:.5px}
+.btn-save:disabled{opacity:.4;cursor:not-allowed}
+.analyzing{background:#EDE0D0;border:1.5px solid #D4BEA8;border-radius:10px;padding:11px 14px;display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13px;color:var(--or)}
+.spin{display:inline-block;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ia-chat{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.bubble-ia{background:var(--bur);color:var(--cr);border-radius:14px 14px 14px 4px;padding:10px 14px;font-size:13px;max-width:85%;align-self:flex-start;line-height:1.5}
+.bubble-opts{display:flex;flex-wrap:wrap;gap:6px;align-self:flex-start;max-width:100%}
+.bubble-opt{padding:7px 13px;font-size:12px;font-weight:500;border:1.5px solid var(--bur);background:var(--card);border-radius:20px;cursor:pointer;color:var(--bur);font-family:var(--font-b);transition:all .15s}
+.bubble-opt:active{background:var(--bur);color:var(--cr)}
+.bubble-user{background:var(--or);color:var(--cr);border-radius:14px 14px 4px 14px;padding:10px 14px;font-size:13px;max-width:85%;align-self:flex-end;line-height:1.5}
+.det-list{margin-top:10px;display:flex;flex-direction:column;gap:7px}
+.det-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:10px;border:1.5px solid var(--border)}
+.det-em{font-size:22px;flex-shrink:0}
+.det-info{flex:1;min-width:0}
+.det-name{font-size:13px;font-weight:500;color:var(--ink)}
+.det-sub{font-size:11px;color:var(--muted)}
+.det-check{width:20px;height:20px;accent-color:var(--or);cursor:pointer;flex-shrink:0}
+.pcat-sec{margin-bottom:20px}
+.pcat-hdr{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.pcat-stripe{width:18px;height:18px;border-radius:4px;background:repeating-linear-gradient(45deg,var(--or) 0,var(--or) 3px,var(--pk) 3px,var(--pk) 6px);flex-shrink:0}
+.pcat-name{font-family:var(--font-d);font-size:14px;color:var(--ink)}
+.pcat-count{font-size:11px;color:var(--muted);font-family:var(--font-b)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
+.pcard{border-radius:10px;background:var(--card);border:1.5px solid var(--border);overflow:hidden;cursor:pointer;position:relative}
+.pcard:active{transform:scale(.96)}
+.pphoto{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.pph-pl{width:100%;aspect-ratio:1;background:repeating-linear-gradient(135deg,#E8D5C0 0,#E8D5C0 8px,#DFC9B0 8px,#DFC9B0 16px);display:flex;align-items:center;justify-content:center;font-size:28px}
+.pmeta{padding:6px 8px}
+.pname{font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.pdesc{font-size:10px;color:var(--muted)}
+.pdelx{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(237,219,194,.95);border:none;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;color:var(--ink);font-weight:700}
+.color-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:3px;border:1px solid rgba(0,0,0,.1);vertical-align:middle;flex-shrink:0}
+.lb{background:var(--bur);border-radius:var(--radius);padding:14px;margin-bottom:16px;position:relative;overflow:hidden}
+.lb-stripe{position:absolute;inset:0;background:repeating-linear-gradient(100deg,var(--or) 0,var(--or) 6px,transparent 6px,transparent 18px,var(--pk) 18px,var(--pk) 24px,transparent 24px,transparent 36px);opacity:.25;pointer-events:none}
+.lb-inner{position:relative;z-index:1}
+.lb-title{font-family:var(--font-d);font-size:13px;color:var(--cr);margin-bottom:10px;letter-spacing:.5px}
+.lb-slots{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.slot{width:72px;height:82px;border:2px dashed rgba(237,219,194,.25);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;background:rgba(237,219,194,.06);position:relative;flex-shrink:0;overflow:hidden}
+.slot.filled{border-style:solid;border-color:var(--or);background:rgba(116,52,43,.2)}
+.slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:9px}
+.slot-ico{font-size:20px;position:relative;z-index:1;color:rgba(237,219,194,.35)}
+.slot-lbl{font-size:9px;color:rgba(237,219,194,.35);text-align:center;padding:0 3px;line-height:1.2}
+.slot-name{font-size:9px;color:var(--cr);font-weight:500;text-align:center;padding:2px 4px;position:relative;z-index:1;background:rgba(57,18,18,.6);border-radius:4px;margin:0 2px;line-height:1.2}
+.slot-clear{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(237,219,194,.9);border:none;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;color:var(--bur);z-index:2;font-weight:700}
+.lb-row{display:flex;gap:8px;align-items:center}
+.lb-input{flex:1;padding:9px 11px;border:1.5px solid rgba(237,219,194,.2);border-radius:10px;font-size:13px;font-family:var(--font-b);background:rgba(237,219,194,.08);color:var(--cr);outline:none;-webkit-appearance:none}
+.lb-input::placeholder{color:rgba(237,219,194,.3)}
+.lb-input:focus{border-color:var(--or)}
+.lb-save{padding:9px 14px;background:var(--or);border:none;border-radius:10px;color:var(--cr);font-size:13px;font-family:var(--font-d);cursor:pointer;white-space:nowrap}
+.suggest-sec{background:#EDE0D0;border:1.5px solid #D0B8A0;border-radius:var(--radius);padding:13px;margin-bottom:14px}
+.suggest-title{font-family:var(--font-d);font-size:12px;color:var(--or);margin-bottom:8px;letter-spacing:.5px}
+.suggest-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.s-chip{padding:5px 12px;font-size:12px;font-weight:500;border:1.5px solid var(--or);background:var(--card);border-radius:20px;cursor:pointer;color:var(--or);font-family:var(--font-b);transition:all .15s}
+.s-chip.on{background:var(--bur);border-color:var(--bur);color:var(--cr)}
+.suggest-btn{width:100%;padding:11px;background:var(--bur);border:none;border-radius:10px;color:var(--cr);font-size:13px;font-family:var(--font-d);cursor:pointer;letter-spacing:.3px}
+.suggest-btn:disabled{opacity:.4;cursor:not-allowed}
+.suggest-result{margin-top:10px;background:var(--card);border-radius:10px;padding:11px;border:1px solid #D0B8A0;font-size:13px;color:var(--ink);line-height:1.6}
+.picker-ov{position:fixed;inset:0;background:rgba(57,18,18,.5);z-index:30;display:flex;align-items:flex-end}
+.picker-sh{background:var(--card);border-radius:var(--radius) var(--radius) 0 0;padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom));width:100%;animation:up .2s ease;max-height:75vh;overflow-y:auto}
+.picker-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.picker-hdr span{font-family:var(--font-d);font-size:14px;color:var(--ink)}
+.picker-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);padding:4px 8px}
+.picker-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pck-item{border:1.5px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;background:var(--card)}
+.pck-item:active{transform:scale(.95)}
+.pck-photo{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.pck-pl{width:100%;aspect-ratio:1;background:repeating-linear-gradient(135deg,#E8D5C0 0,#E8D5C0 8px,#DFC9B0 8px,#DFC9B0 16px);display:flex;align-items:center;justify-content:center;font-size:24px}
+.pck-name{font-size:10px;padding:4px 6px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.det-ov{position:fixed;inset:0;background:rgba(57,18,18,.6);z-index:25;display:flex;align-items:center;justify-content:center;padding:20px}
+.det-card{background:var(--card);border-radius:var(--radius);width:100%;max-width:340px;overflow:hidden;animation:pop .2s ease;max-height:90vh;overflow-y:auto}
+@keyframes pop{from{transform:scale(.93);opacity:0}to{transform:scale(1);opacity:1}}
+.det-photos-scroll{display:flex;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x mandatory}
+.det-photos-scroll::-webkit-scrollbar{display:none}
+.det-photo{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;flex-shrink:0;scroll-snap-align:start}
+.det-ph-dots{display:flex;justify-content:center;gap:5px;padding:8px 0 0}
+.det-ph-dot{width:6px;height:6px;border-radius:50%;background:var(--border)}
+.det-ph-dot.on{background:var(--or)}
+.det-pl{width:100%;aspect-ratio:3/4;background:repeating-linear-gradient(135deg,#E8D5C0 0,#E8D5C0 12px,#DFC9B0 12px,#DFC9B0 24px);display:flex;align-items:center;justify-content:center;font-size:64px}
+.det-body{padding:14px}
+.det-t-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.det-t{font-family:var(--font-d);font-size:17px;color:var(--ink);flex:1}
+.det-edit-btn{background:none;border:1.5px solid var(--border);border-radius:8px;padding:5px 9px;font-size:12px;cursor:pointer;color:var(--muted);font-family:var(--font-b)}
+.det-edit-input{flex:1;padding:6px 10px;border:1.5px solid var(--or);border-radius:8px;font-size:15px;font-family:var(--font-d);background:var(--bg);color:var(--ink);outline:none}
+.det-save-btn{background:var(--or);border:none;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;color:var(--cr);font-family:var(--font-d)}
+.det-s{font-size:12px;color:var(--muted);margin-top:2px}
+.det-close{width:100%;margin-top:12px;padding:11px;border:1.5px solid var(--border);border-radius:10px;background:none;font-size:14px;cursor:pointer;font-family:var(--font-b);color:var(--muted)}
+.modal-ov{position:fixed;inset:0;background:rgba(57,18,18,.5);z-index:35;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-sm{background:var(--card);border-radius:var(--radius);padding:18px;width:100%;max-width:280px}
+.modal-sm h3{font-family:var(--font-d);font-size:14px;margin-bottom:11px;color:var(--ink)}
+.modal-sm input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:var(--font-b);background:var(--bg);color:var(--ink);outline:none}
+.modal-sm input:focus{border-color:var(--or)}
+.modal-actions{display:flex;gap:8px;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="stripe-bg"></div>
+    <div class="topbar-inner">
+      <span class="logo">rr<span>o</span>bs</span>
+      <div class="tabs">
+        <button class="tab on" id="tab-looks" onclick="setTab('looks')">Looks</button>
+        <button class="tab" id="tab-prendas" onclick="setTab('prendas')">Prendas</button>
+      </div>
+    </div>
+  </div>
+  <div class="content" id="content"></div>
+</div>
+<input type="file" id="file-cam" accept="image/*" capture="environment" onchange="onFile(event)">
+<input type="file" id="file-gal" accept="image/*" onchange="onFile(event)">
+
+<script>
+const DEFAULT_OCCS=['casual','trabajo','noche','finde','verano','invierno','sport','evento'];
+const OCC_COLORS=['tag-or','tag-pk','tag-br','tag-or','tag-pk','tag-br','tag-or','tag-pk'];
+const CAT_LABELS={tops:'Tops',pantalones:'Pantalones',faldas:'Faldas',vestidos:'Vestidos',chaquetas:'Chaquetas y abrigos',zapatos:'Zapatos',accesorios:'Accesorios',otros:'Otros'};
+const CAT_ORDER=['tops','pantalones','faldas','vestidos','chaquetas','zapatos','accesorios','otros'];
+const SLOT_CATS=[['tops'],['pantalones','faldas','vestidos'],['chaquetas'],['zapatos'],['accesorios','otros']];
+const SLOT_LABELS=['top','pantalón','chaqueta','zapatos','extra'];
+const COLOR_PALETTE=[
+  {name:'rojo',hex:'#E05555'},{name:'rosa',hex:'#F4A0B0'},{name:'naranja',hex:'#F4915A'},
+  {name:'amarillo',hex:'#F4D35A'},{name:'verde',hex:'#6BBF7A'},{name:'azul',hex:'#5A8FF4'},
+  {name:'marino',hex:'#2A3F6B'},{name:'morado',hex:'#9B72CF'},{name:'marrón',hex:'#8B5E3C'},
+  {name:'beige',hex:'#D4B896'},{name:'blanco',hex:'#F0EDE8'},{name:'gris',hex:'#9B9B9B'},{name:'negro',hex:'#222222'}
+];
+const IA_QUESTIONS=[
+  {key:'tipo',text:'¿Qué tipo de prenda es?',opts:['Camiseta / top','Camisa','Jersey / sudadera','Pantalón','Falda','Vestido','Chaqueta / abrigo','Zapatos / zapatillas','Bolso / accesorio']},
+  {key:'color',text:'¿De qué color es principalmente?',opts:['Blanco','Negro','Gris','Beige / crema','Marrón','Rojo','Rosa','Naranja','Amarillo','Verde','Azul','Marino','Morado']},
+  {key:'desc',text:'¿Algo más que añadir? (material, estilo…)',opts:['Denim / vaquero','Algodón liso','Estampado','Punto / lana','Cuero','Sintético','Dejarlo así']},
+];
+
+let currentTab='looks',looks=[],prendas=[],occs=[...DEFAULT_OCCS];
+let nextLookId=1,nextPrendaId=1;
+let showAdd=false;
+let draft={title:'',photos:[],occasions:[],analyzing:false,detected:[],selected:{},iaChat:[],iaStep:'idle',iaAnswers:{}};
+let detailLook=null,slotSel={},pickerSlot=null;
+let filterLook='todos',filterColor='',searchQ='';
+let suggestOcc='',suggestResult='',suggesting=false;
+let editingLookId=null,showAddOcc=false;
+
+function save(){try{localStorage.setItem('robs_looks',JSON.stringify(looks));localStorage.setItem('robs_prendas',JSON.stringify(prendas));localStorage.setItem('robs_occs',JSON.stringify(occs));localStorage.setItem('robs_ids',JSON.stringify({nl:nextLookId,np:nextPrendaId}));}catch(e){}}
+function load(){try{const l=localStorage.getItem('robs_looks'),p=localStorage.getItem('robs_prendas'),o=localStorage.getItem('robs_occs'),ids=localStorage.getItem('robs_ids');if(l)looks=JSON.parse(l);if(p)prendas=JSON.parse(p);if(o)occs=JSON.parse(o);if(ids){const d=JSON.parse(ids);nextLookId=d.nl||1;nextPrendaId=d.np||1;}}catch(e){}}
+load();
+
+history.pushState({r:1},'');
+window.addEventListener('popstate',()=>{
+  if(showAdd){showAdd=false;}
+  else if(detailLook){detailLook=null;editingLookId=null;}
+  else if(pickerSlot!==null){pickerSlot=null;}
+  else if(editingLookId!==null){editingLookId=null;}
+  else if(showAddOcc){showAddOcc=false;}
+  else{history.pushState({r:1},'');return;}
+  history.pushState({r:1},'');
+  render();
+});
+
+function setTab(t){currentTab=t;searchQ='';filterColor='';document.getElementById('tab-looks').className='tab'+(t==='looks'?' on':'');document.getElementById('tab-prendas').className='tab'+(t==='prendas'?' on':'');render();}
+function tagColor(occ){const i=occs.indexOf(occ);return i>=0?OCC_COLORS[i%OCC_COLORS.length]:'tag-def';}
+function safeStr(obj){return JSON.stringify(obj).replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function fileToB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej();r.readAsDataURL(file);});}
+
+async function onFile(e){
+  const file=e.target.files[0];if(!file)return;
+  const b64=await fileToB64(file);
+  draft.photos.push(b64);
+  e.target.value='';
+  if(draft.photos.length===1){
+    draft.analyzing=true;draft.detected=[];draft.selected={};draft.iaChat=[];draft.iaStep='idle';draft.iaAnswers={};
+    render();
+    await analyzePhoto(file);
+  }else{render();}
+}
+function triggerCam(){document.getElementById('file-cam').click();}
+function triggerGal(){document.getElementById('file-gal').click();}
+function removePhoto(i){draft.photos.splice(i,1);if(draft.photos.length===0){draft.detected=[];draft.selected={};draft.iaChat=[];draft.iaStep='idle';}render();}
+
+async function analyzePhoto(file){
+  try{
+    const b64=draft.photos[0].split(',')[1];
+    const mt=(file&&file.type)||'image/jpeg';
+    const res=await fetch('/.netlify/functions/gemini',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        contents:[{parts:[
+          {inline_data:{mime_type:mt,data:b64}},
+          {text:'Eres experto en moda. Analiza esta foto e identifica TODAS las prendas y accesorios. Responde SOLO con array JSON sin texto extra ni markdown:\n[{"nombre":"nombre","categoria":"tops|pantalones|faldas|vestidos|chaquetas|zapatos|accesorios|otros","descripcion":"color y material","emoji":"emoji","color":"color en español"}]\nIncluye zapatos, bolsos, cinturones, accesorios. Si no hay ropa devuelve [].'}
+        ]}],
+        generationConfig:{temperature:0.1,maxOutputTokens:1000}
+      })
+    });
+    const data=await res.json();
+    let txt=data?.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    txt=txt.replace(/^```[a-z]*\n?/,'').replace(/\n?```$/,'').trim();
+    let items=[];
+    try{items=JSON.parse(txt);}catch(er){const m=txt.match(/\[[\s\S]*?\]/);if(m)try{items=JSON.parse(m[0]);}catch(e2){}}
+    if(items.length>0){
+      draft.detected=items.map((it,i)=>{return {...it,id:'d'+i}});
+      draft.selected={};draft.detected.forEach(it=>{draft.selected[it.id]=true;});
+      draft.iaStep='detected';
+    }else{
+      draft.iaStep='ask';
+      draft.iaChat=[{role:'ia',text:'No detecté prendas. ¿Qué tipo de prenda principal llevas?',opts:IA_QUESTIONS[0].opts,key:IA_QUESTIONS[0].key}];
+    }
+  }catch(err){
+    console.error('Error:',err);
+    draft.iaStep='ask';
+    draft.iaChat=[{role:'ia',text:'Error al analizar. ¿Qué tipo de prenda principal llevas?',opts:IA_QUESTIONS[0].opts,key:IA_QUESTIONS[0].key}];
+  }
+  draft.analyzing=false;render();
+}
+
+function iaSendOpt(opt,key){
+  draft.iaAnswers[key]=opt;
+  draft.iaChat.push({role:'user',text:opt});
+  const idx=IA_QUESTIONS.findIndex(q=>q.key===key);
+  if(idx<IA_QUESTIONS.length-1){
+    const next=IA_QUESTIONS[idx+1];
+    draft.iaChat.push({role:'ia',text:next.text,opts:next.opts,key:next.key});
+  }else{
+    const cat=getCat(draft.iaAnswers.tipo||'');
+    const nombre=`${draft.iaAnswers.color||''} ${draft.iaAnswers.tipo||'prenda'}`.trim();
+    const item={id:'d'+draft.detected.length,nombre,categoria:cat,descripcion:`${draft.iaAnswers.color||''} ${draft.iaAnswers.desc||''}`.trim(),emoji:getEmoji(cat),color:(draft.iaAnswers.color||'').toLowerCase()};
+    draft.detected.push(item);draft.selected[item.id]=true;
+    draft.iaChat.push({role:'ia',text:`¡Añadido! ${nombre}. ¿Hay más prendas en este look?`,opts:['Sí, añadir otra','No, es todo'],key:'more'});
+    draft.iaStep='more';draft.iaAnswers={};
+  }
+  render();
+}
+function iaMore(opt){
+  draft.iaChat.push({role:'user',text:opt});
+  if(opt.startsWith('Sí')){
+    draft.iaChat.push({role:'ia',text:IA_QUESTIONS[0].text,opts:IA_QUESTIONS[0].opts,key:IA_QUESTIONS[0].key});
+    draft.iaStep='ask';draft.iaAnswers={};
+  }else{
+    draft.iaChat.push({role:'ia',text:'¡Perfecto! Revisa las prendas abajo y guarda el look.'});
+    draft.iaStep='done';
+  }
+  render();
+}
+function getCat(t){if(/camiseta|top|camisa|jersey|suda/i.test(t))return 'tops';if(/pantal/i.test(t))return 'pantalones';if(/falda/i.test(t))return 'faldas';if(/vestido/i.test(t))return 'vestidos';if(/chaqueta|abrigo/i.test(t))return 'chaquetas';if(/zapato|zapatilla/i.test(t))return 'zapatos';if(/bolso|accesorio/i.test(t))return 'accesorios';return 'otros';}
+function getEmoji(c){return{tops:'👕',pantalones:'👖',faldas:'🩱',vestidos:'👗',chaquetas:'🧥',zapatos:'👟',accesorios:'👜',otros:'✨'}[c]||'👕';}
+
+function toggleOcc(o){
+  const el=document.getElementById('look-title-in');if(el)draft.title=el.value;
+  draft.occasions=draft.occasions.includes(o)?draft.occasions.filter(x=>x!==o):[...draft.occasions,o];
+  render();
+  setTimeout(()=>{const e=document.getElementById('look-title-in');if(e)e.value=draft.title;},10);
+}
+function openAddOcc(){showAddOcc=true;render();}
+function closeAddOcc(){showAddOcc=false;render();}
+function saveNewOcc(){const v=document.getElementById('new-occ-input')?.value?.trim().toLowerCase();if(v&&!occs.includes(v)){occs.push(v);save();}showAddOcc=false;render();}
+function toggleDet(id){draft.selected[id]=!draft.selected[id];render();}
+
+function openAdd(){draft={title:'',photos:[],occasions:[],analyzing:false,detected:[],selected:{},iaChat:[],iaStep:'idle',iaAnswers:{}};showAdd=true;render();}
+function closeAdd(){showAdd=false;render();}
+function saveLook(){
+  const el=document.getElementById('look-title-in');const t=el?.value?.trim()||'Look sin nombre';
+  const lid=nextLookId++;
+  looks.push({id:lid,title:t,photos:[...draft.photos],occasions:[...draft.occasions]});
+  draft.detected.filter(it=>draft.selected[it.id]).forEach(it=>{prendas.push({id:nextPrendaId++,nombre:it.nombre,categoria:it.categoria,descripcion:it.descripcion,emoji:it.emoji,color:it.color||'',photo:draft.photos[0]||null,fromLook:lid});});
+  showAdd=false;save();render();
+}
+function delLook(id,e){e.stopPropagation();looks=looks.filter(l=>l.id!==id);save();render();}
+function delPrenda(id,e){e.stopPropagation();e.preventDefault();prendas=prendas.filter(p=>p.id!==id);save();render();}
+function openDetail(look){detailLook=look;render();}
+function closeDetail(){detailLook=null;editingLookId=null;render();}
+function saveEditTitle(){
+  const v=document.getElementById('edit-title-input')?.value?.trim();
+  if(v&&editingLookId!==null){const l=looks.find(x=>x.id===editingLookId);if(l)l.title=v;if(detailLook?.id===editingLookId)detailLook={...detailLook,title:v};save();}
+  editingLookId=null;render();
+}
+function openPicker(i){pickerSlot=i;render();}
+function closePicker(){pickerSlot=null;render();}
+function pickPrenda(id){slotSel[pickerSlot]=id;pickerSlot=null;render();}
+function clearSlot(i,e){e.stopPropagation();delete slotSel[i];render();}
+function saveLookFromPrendas(){const pieces=Object.values(slotSel).filter(Boolean);if(!pieces.length)return;const t=document.getElementById('lb-name-in')?.value?.trim()||'Look combinado';const fp=prendas.find(p=>p.id===pieces[0]);looks.push({id:nextLookId++,title:t,photos:fp?.photo?[fp.photo]:[],occasions:[],pieces});slotSel={};save();render();}
+
+async function getSuggestion(){
+  if(!suggestOcc||prendas.length<2)return;
+  suggesting=true;render();
+  try{
+    const lista=prendas.map(p=>`- ${p.nombre} (${p.categoria}, ${p.descripcion||''})`).join('\n');
+    const res=await fetch('/.netlify/functions/gemini',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:`Tengo estas prendas:\n${lista}\n\nSugiere un look para: ${suggestOcc}. Nombra 3-4 prendas concretas y explica por qué combinan. Español, máximo 60 palabras.`}]}],generationConfig:{temperature:0.7,maxOutputTokens:200}})
+    });
+    const data=await res.json();
+    suggestResult=data?.candidates?.[0]?.content?.parts?.[0]?.text||'Sin sugerencia.';
+  }catch(e){suggestResult='Error de conexión.';}
+  suggesting=false;render();
+}
+
+function render(){document.getElementById('content').innerHTML=currentTab==='looks'?renderLooks():renderPrendas();}
+
+function renderLooks(){
+  let filtered=filterLook==='todos'?[...looks]:looks.filter(l=>(l.occasions||[]).includes(filterLook));
+  if(searchQ.trim()){const q=searchQ.toLowerCase();filtered=filtered.filter(l=>l.title.toLowerCase().includes(q));}
+  let h=`<div class="search-wrap"><span class="search-ico">🔍</span><input type="text" placeholder="Buscar look…" value="${searchQ.replace(/"/g,'&quot;')}" oninput="searchQ=this.value;render()"></div>`;
+  h+=`<div class="chips">${['todos',...occs].map(f=>`<button class="chip ${filterLook===f?'on':''}" onclick="filterLook='${f}';render()">${f==='todos'?'Todos':f}</button>`).join('')}</div>`;
+  if(looks.length===0){h+=`<div class="empty"><div class="empty-ico">👗</div><div class="empty-t">rrobs está vacío</div><div class="empty-s">Sube tu primer look con foto y la IA detectará las prendas automáticamente.</div></div>`;}
+  else if(filtered.length===0){h+=`<div class="empty"><div class="empty-ico">🔍</div><div class="empty-t">Sin resultados</div><div class="empty-s">Prueba otro filtro o búsqueda.</div></div>`;}
+  h+=`<div class="grid">`;
+  filtered.forEach(l=>{
+    const photos=l.photos||[];const cover=photos[0]||null;
+    h+=`<div class="lcard" onclick="openDetail(${safeStr(l)})">
+      ${cover?`<img class="lphoto" src="${cover}" loading="lazy">`:`<div class="lph-pl">👗</div>`}
+      ${photos.length>1?`<div class="photo-badge">📷 ${photos.length}</div>`:''}
+      <div class="lmeta">
+        <div class="ltitle-row"><div class="ltitle">${l.title}</div>
+        <button class="edit-btn" onclick="event.stopPropagation();editingLookId=${l.id};render()">✏️</button></div>
+        <div class="ltags">${(l.occasions||[]).slice(0,2).map(o=>`<span class="tag ${tagColor(o)}">${o}</span>`).join('')}${(l.pieces||[]).length?`<span class="tag tag-br">combinado</span>`:''}</div>
+      </div>
+      <button class="delx" onclick="delLook(${l.id},event)">×</button>
+    </div>`;
+  });
+  h+=`<div class="addcard" onclick="openAdd()"><div class="add-ico">+</div><div class="add-lbl">Añadir look con foto</div></div></div>`;
+  if(showAdd)h+=renderSheet();
+  if(detailLook)h+=renderDetail();
+  if(editingLookId!==null&&!detailLook)h+=renderEditModal();
+  if(showAddOcc)h+=renderAddOcc();
+  return h;
+}
+
+function renderSheet(){
+  let h=`<div class="overlay"><div class="sheet"><div class="handle"></div><div class="sh-title">Nuevo look</div>
+  <span class="photo-upload-label">Fotos del look</span>
+  <div class="photo-source-btns">
+    <button class="src-btn" onclick="triggerCam()"><span class="src-ico">📷</span><span class="src-lbl">Cámara</span></button>
+    <button class="src-btn" onclick="triggerGal()"><span class="src-ico">🖼️</span><span class="src-lbl">Galería</span></button>
+  </div>`;
+  if(draft.photos.length>0){
+    h+=`<div class="photos-scroll">`;
+    draft.photos.forEach((p,i)=>h+=`<div class="photo-thumb-wrap"><img class="photo-thumb" src="${p}"><button class="photo-thumb-del" onclick="removePhoto(${i})">×</button></div>`);
+    h+=`<div class="add-more-photo" onclick="triggerGal()"><span>+</span><small>más fotos</small></div></div>`;
+  }
+  if(draft.analyzing){h+=`<div class="analyzing"><span class="spin">⚙️</span> La IA está analizando las prendas…</div>`;}
+  else if(draft.iaStep==='ask'||draft.iaStep==='more'){h+=renderIAChat();}
+  else if(draft.detected.length>0){
+    h+=`<div style="margin-top:11px"><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:500;margin-bottom:7px">Prendas detectadas — elige cuáles guardar</div>
+    <div class="det-list">${draft.detected.map(it=>`<div class="det-item">
+      <span class="det-em">${it.emoji||'👕'}</span>
+      <div class="det-info"><div class="det-name">${it.nombre}</div><div class="det-sub">${CAT_LABELS[it.categoria]||it.categoria}${it.descripcion?' · '+it.descripcion:''}</div></div>
+      <input type="checkbox" class="det-check" ${draft.selected[it.id]?'checked':''} onchange="toggleDet('${it.id}')">
+    </div>`).join('')}</div></div>`;
+  }
+  h+=`<div class="field"><label>Nombre del look</label><input id="look-title-in" type="text" placeholder="Ej: Brunch del domingo" value="${draft.title.replace(/"/g,'&quot;')}" oninput="draft.title=this.value" autocomplete="off"></div>
+  <div class="field"><label>Ocasión</label><div class="occ-row">
+    ${occs.map(o=>`<button class="occ-btn ${draft.occasions.includes(o)?'on':''}" onclick="toggleOcc('${o}')">${o}</button>`).join('')}
+    <button class="occ-add-btn" onclick="openAddOcc()">+</button>
+  </div></div>
+  <div class="sh-actions"><button class="btn-cancel" onclick="closeAdd()">Cancelar</button>
+  <button class="btn-save" onclick="saveLook()" ${draft.analyzing?'disabled':''}>Guardar look</button></div>
+  </div></div>`;
+  return h;
+}
+
+function renderIAChat(){
+  let h=`<div class="ia-chat">`;
+  draft.iaChat.forEach(msg=>{
+    if(msg.role==='ia'){
+      h+=`<div class="bubble-ia">${msg.text}</div>`;
+      if(msg.opts){
+        h+=`<div class="bubble-opts">`;
+        if(msg.key==='more'){msg.opts.forEach(o=>{h+=`<button class="bubble-opt" onclick="iaMore('${o.replace(/'/g,"\\'")} ')">${o}</button>`;});}
+        else{msg.opts.forEach(o=>{h+=`<button class="bubble-opt" onclick="iaSendOpt('${o.replace(/'/g,"\\'")}','${msg.key}')">${o}</button>`;});}
+        h+=`</div>`;
+      }
+    }else{h+=`<div class="bubble-user">${msg.text}</div>`;}
+  });
+  h+=`</div>`;return h;
+}
+
+function renderDetail(){
+  const l=detailLook;const photos=l.photos||[];
+  let h=`<div class="det-ov" onclick="closeDetail()"><div class="det-card" onclick="event.stopPropagation()">`;
+  if(photos.length>0){
+    h+=`<div class="det-photos-scroll">${photos.map(p=>`<img class="det-photo" src="${p}" style="min-width:100%" loading="lazy">`).join('')}</div>`;
+    if(photos.length>1)h+=`<div class="det-ph-dots">${photos.map((_,i)=>`<div class="det-ph-dot ${i===0?'on':''}"></div>`).join('')}</div>`;
+  }else{h+=`<div class="det-pl">👗</div>`;}
+  h+=`<div class="det-body">`;
+  if(editingLookId===l.id){
+    h+=`<div class="det-t-row"><input id="edit-title-input" class="det-edit-input" type="text" value="${l.title.replace(/"/g,'&quot;')}" autocomplete="off"><button class="det-save-btn" onclick="saveEditTitle()">OK</button></div>`;
+  }else{
+    h+=`<div class="det-t-row"><div class="det-t">${l.title}</div><button class="det-edit-btn" onclick="editingLookId=${l.id};render()">✏️ Editar</button></div>`;
+  }
+  h+=`<div class="det-s">${(l.occasions||[]).join(' · ')||'Sin etiquetas'}</div>
+  <button class="det-close" onclick="closeDetail()">Cerrar</button></div></div></div>`;
+  return h;
+}
+
+function renderEditModal(){
+  const l=looks.find(x=>x.id===editingLookId);
+  return `<div class="modal-ov" onclick="editingLookId=null;render()"><div class="modal-sm" onclick="event.stopPropagation()">
+    <h3>Editar nombre</h3>
+    <input id="edit-title-input" type="text" value="${(l?.title||'').replace(/"/g,'&quot;')}" autocomplete="off">
+    <div class="modal-actions"><button class="btn-cancel" onclick="editingLookId=null;render()">Cancelar</button>
+    <button class="btn-save" onclick="saveEditTitle()">Guardar</button></div>
+  </div></div>`;
+}
+
+function renderAddOcc(){
+  return `<div class="modal-ov" onclick="closeAddOcc()"><div class="modal-sm" onclick="event.stopPropagation()">
+    <h3>Nueva ocasión</h3>
+    <input id="new-occ-input" type="text" placeholder="Ej: playa, gym, boda…" autocomplete="off">
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeAddOcc()">Cancelar</button>
+    <button class="btn-save" onclick="saveNewOcc()">Añadir</button></div>
+  </div></div>`;
+}
+
+function renderPrendas(){
+  let sp=prendas;
+  if(searchQ.trim()){const q=searchQ.toLowerCase();sp=sp.filter(p=>p.nombre.toLowerCase().includes(q)||(p.descripcion||'').toLowerCase().includes(q));}
+  if(filterColor)sp=sp.filter(p=>(p.color||'').toLowerCase().includes(filterColor));
+  let h=`<div class="search-wrap"><span class="search-ico">🔍</span><input type="text" placeholder="Buscar prenda…" value="${searchQ.replace(/"/g,'&quot;')}" oninput="searchQ=this.value;render()"></div>`;
+  h+=`<div class="color-chips"><button class="chip ${!filterColor?'on':''}" style="font-size:11px;padding:5px 11px" onclick="filterColor='';render()">Todos</button>`;
+  COLOR_PALETTE.forEach(c=>{h+=`<div class="color-chip ${filterColor===c.name?'on':''}" style="background:${c.hex}" title="${c.name}" onclick="filterColor=filterColor==='${c.name}'?'':'${c.name}';render()"></div>`;});
+  h+=`</div>`;
+  if(prendas.length===0){h+=`<div class="empty"><div class="empty-ico">🧥</div><div class="empty-t">Sin prendas todavía</div><div class="empty-s">Sube un look en "Looks" y la IA separará las prendas aquí.</div></div>`;return h;}
+  h+=`<div class="suggest-sec"><div class="suggest-title">SUGERIR LOOK POR OCASIÓN</div>
+  <div class="suggest-row">${occs.map(o=>`<button class="s-chip ${suggestOcc===o?'on':''}" onclick="suggestOcc='${o}';suggestResult='';render()">${o}</button>`).join('')}</div>
+  <button class="suggest-btn" onclick="getSuggestion()" ${!suggestOcc||suggesting?'disabled':''}>${suggesting?'⚙️ Generando…':'✦ Sugerir combinación'}</button>
+  ${suggestResult?`<div class="suggest-result">${suggestResult}</div>`:''}</div>`;
+  h+=`<div class="lb"><div class="lb-stripe"></div><div class="lb-inner"><div class="lb-title">CREAR LOOK HIPOTÉTICO</div>
+  <div class="lb-slots">${SLOT_CATS.map((sc,i)=>{const pid=slotSel[i],pr=pid?prendas.find(p=>p.id===pid):null;
+    return `<div class="slot ${pr?'filled':''}" onclick="openPicker(${i})">
+      ${pr&&pr.photo?`<img src="${pr.photo}" loading="lazy">`:''}
+      ${pr?`<span class="slot-name">${pr.nombre.split(' ').slice(0,2).join(' ')}</span>`:`<span class="slot-ico">+</span><span class="slot-lbl">${SLOT_LABELS[i]}</span>`}
+      ${pr?`<button class="slot-clear" onclick="clearSlot(${i},event)">×</button>`:''}
+    </div>`;}).join('')}</div>
+  <div class="lb-row"><input id="lb-name-in" class="lb-input" type="text" placeholder="Nombre del look…" autocomplete="off">
+  <button class="lb-save" onclick="saveLookFromPrendas()">Guardar</button></div></div></div>`;
+  const activeCats=CAT_ORDER.filter(c=>sp.some(p=>p.categoria===c));
+  if(!activeCats.length&&(searchQ||filterColor)){h+=`<div class="empty"><div class="empty-ico">🔍</div><div class="empty-t">Sin resultados</div><div class="empty-s">Prueba otro color o búsqueda.</div></div>`;}
+  activeCats.forEach(cat=>{
+    const items=sp.filter(p=>p.categoria===cat);
+    h+=`<div class="pcat-sec"><div class="pcat-hdr"><div class="pcat-stripe"></div><span class="pcat-name">${CAT_LABELS[cat]}</span><span class="pcat-count">${items.length}</span></div>
+    <div class="pgrid">${items.map(p=>{const co=COLOR_PALETTE.find(c=>c.name===(p.color||'').toLowerCase());
+      return `<div class="pcard">${p.photo?`<img class="pphoto" src="${p.photo}" loading="lazy">`:`<div class="pph-pl">${p.emoji||'👕'}</div>`}
+      <div class="pmeta"><div class="pname">${co?`<span class="color-dot" style="background:${co.hex}"></span>`:''}${p.nombre}</div><div class="pdesc">${p.descripcion||''}</div></div>
+      <button class="pdelx" onclick="delPrenda(${p.id},event)">×</button></div>`;}).join('')}</div></div>`;
+  });
+  if(pickerSlot!==null)h+=renderPicker();
+  return h;
+}
+
+function renderPicker(){
+  const allowed=SLOT_CATS[pickerSlot],items=prendas.filter(p=>allowed.includes(p.categoria));
+  return `<div class="picker-ov"><div class="picker-sh"><div class="picker-hdr"><span>Elige ${SLOT_LABELS[pickerSlot]}</span><button class="picker-close" onclick="closePicker()">×</button></div>
+  ${!items.length?`<div style="text-align:center;padding:20px;font-size:13px;color:var(--muted)">No tienes prendas de esta categoría.</div>`:''}
+  <div class="picker-grid">${items.map(p=>`<div class="pck-item" onclick="pickPrenda(${p.id})">
+    ${p.photo?`<img class="pck-photo" src="${p.photo}" loading="lazy">`:`<div class="pck-pl">${p.emoji||'👕'}</div>`}
+    <div class="pck-name">${p.nombre}</div>
+  </div>`).join('')}</div></div></div>`;
+}
+
+render();
+</script>
+</body>
+</html>
