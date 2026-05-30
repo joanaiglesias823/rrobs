@@ -191,6 +191,41 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--ink)}
 .modal-sm input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:var(--font-b);background:var(--bg);color:var(--ink);outline:none}
 .modal-sm input:focus{border-color:var(--or)}
 .modal-actions{display:flex;gap:8px;margin-top:12px}
+
+/* AÑADIR PRENDA MANUAL */
+.add-prenda-sec{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:16px}
+.add-prenda-title{font-family:var(--font-d);font-size:12px;color:var(--ink);margin-bottom:10px;letter-spacing:.4px}
+.add-method-tabs{display:flex;gap:6px;margin-bottom:12px}
+.method-tab{flex:1;padding:9px 6px;border:1.5px solid var(--border);border-radius:10px;font-size:11px;font-weight:500;font-family:var(--font-b);background:var(--bg);color:var(--muted);cursor:pointer;text-align:center;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:4px}
+.method-tab.on{border-color:var(--or);background:rgba(116,52,43,.08);color:var(--or)}
+.method-tab-ico{font-size:20px}
+.method-tab-lbl{font-size:10px}
+.link-input-wrap{display:flex;gap:8px}
+.link-input{flex:1;padding:11px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:var(--font-b);background:var(--bg);color:var(--ink);outline:none;-webkit-appearance:none}
+.link-input:focus{border-color:var(--or)}
+.link-btn{padding:11px 14px;background:var(--or);border:none;border-radius:10px;color:var(--cr);font-size:13px;font-family:var(--font-d);cursor:pointer;white-space:nowrap}
+.link-btn:disabled{opacity:.4;cursor:not-allowed}
+.scan-area{border:2px dashed var(--or);border-radius:10px;padding:20px;text-align:center;cursor:pointer;background:rgba(116,52,43,.04)}
+.scan-area:active{background:rgba(116,52,43,.1)}
+.scan-ico-big{font-size:32px;margin-bottom:6px}
+.scan-lbl{font-size:13px;color:var(--or);font-weight:500}
+.scan-sub{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
+.preview-box{margin-top:12px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:12px;display:flex;gap:12px;align-items:flex-start}
+.preview-img{width:72px;height:72px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1px solid var(--border);display:block}
+.preview-img-pl{width:72px;height:72px;border-radius:8px;background:repeating-linear-gradient(135deg,#E8D5C0 0,#E8D5C0 8px,#DFC9B0 8px,#DFC9B0 16px);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+.preview-info{flex:1;min-width:0}
+.preview-edit{width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--font-b);background:var(--card);color:var(--ink);outline:none;margin-bottom:7px}
+.preview-edit:focus{border-color:var(--or)}
+.preview-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.cat-sel-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px}
+.cat-btn{padding:4px 9px;font-size:10px;font-weight:500;border:1.5px solid var(--border);background:var(--bg);border-radius:14px;cursor:pointer;color:var(--muted);font-family:var(--font-b);transition:all .15s}
+.cat-btn.on{background:var(--or);border-color:var(--or);color:var(--cr)}
+.col-sel-row{display:flex;gap:5px;flex-wrap:wrap}
+.col-btn{width:22px;height:22px;border-radius:50%;border:2.5px solid transparent;cursor:pointer;flex-shrink:0;transition:transform .15s,border-color .15s}
+.col-btn.on{border-color:var(--ink);transform:scale(1.2)}
+.add-prenda-save-btn{width:100%;margin-top:10px;padding:12px;background:var(--bur);border:none;border-radius:10px;color:var(--cr);font-size:13px;font-family:var(--font-d);cursor:pointer;letter-spacing:.3px}
+.add-prenda-save-btn:disabled{opacity:.4;cursor:not-allowed}
+.link-hint{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -209,6 +244,8 @@ body{font-family:var(--font-b);background:var(--bg);color:var(--ink)}
 </div>
 <input type="file" id="file-cam" accept="image/*" capture="environment" onchange="onFile(event)">
 <input type="file" id="file-gal" accept="image/*" onchange="onFile(event)">
+<input type="file" id="file-scan" accept="image/*" capture="environment" onchange="onScanFile(event)">
+<input type="file" id="file-prenda-photo" accept="image/*" onchange="onPrendaPhoto(event)">
 
 <script>
 const DEFAULT_OCCS=['casual','trabajo','noche','finde','verano','invierno','sport','evento'];
@@ -237,6 +274,12 @@ let detailLook=null,slotSel={},pickerSlot=null;
 let filterLook='todos',filterColor='',searchQ='';
 let suggestOcc='',suggestResult='',suggesting=false;
 let editingLookId=null,showAddOcc=false;
+
+// Estado añadir prenda manual
+let addPrendaMethod='link';
+let addPrendaUrl='';
+let addPrendaPreview=null;
+let addPrendaLoading=false;
 
 function save(){try{localStorage.setItem('robs_looks',JSON.stringify(looks));localStorage.setItem('robs_prendas',JSON.stringify(prendas));localStorage.setItem('robs_occs',JSON.stringify(occs));localStorage.setItem('robs_ids',JSON.stringify({nl:nextLookId,np:nextPrendaId}));}catch(e){}}
 function load(){try{const l=localStorage.getItem('robs_looks'),p=localStorage.getItem('robs_prendas'),o=localStorage.getItem('robs_occs'),ids=localStorage.getItem('robs_ids');if(l)looks=JSON.parse(l);if(p)prendas=JSON.parse(p);if(o)occs=JSON.parse(o);if(ids){const d=JSON.parse(ids);nextLookId=d.nl||1;nextPrendaId=d.np||1;}}catch(e){}}
@@ -302,7 +345,6 @@ async function analyzePhoto(file){
       draft.iaChat=[{role:'ia',text:'No detecté prendas. ¿Qué tipo de prenda principal llevas?',opts:IA_QUESTIONS[0].opts,key:IA_QUESTIONS[0].key}];
     }
   }catch(err){
-    console.error('Error:',err);
     draft.iaStep='ask';
     draft.iaChat=[{role:'ia',text:'Error al analizar. ¿Qué tipo de prenda principal llevas?',opts:IA_QUESTIONS[0].opts,key:IA_QUESTIONS[0].key}];
   }
@@ -389,6 +431,114 @@ async function getSuggestion(){
   }catch(e){suggestResult='Error de conexión.';}
   suggesting=false;render();
 }
+
+// ── AÑADIR PRENDA MANUAL ──────────────────────────────────────
+
+function setAddPrendaMethod(m){
+  addPrendaMethod=m;addPrendaPreview=null;addPrendaUrl='';
+  render();
+  if(m==='link')setTimeout(()=>{const i=document.getElementById('add-prenda-link-in');if(i)i.focus();},80);
+}
+
+function onAddPrendaUrlInput(v){addPrendaUrl=v;}
+
+async function loadPrendaFromLink(){
+  const url=document.getElementById('add-prenda-link-in')?.value?.trim();
+  if(!url)return;
+  addPrendaUrl=url;
+  addPrendaLoading=true;addPrendaPreview=null;render();
+  try{
+    const res=await fetch('/.netlify/functions/gemini',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        contents:[{parts:[{text:`Tengo este link de una tienda de ropa: ${url}\n\nExtrae la información de la prenda. Responde SOLO con JSON sin markdown:\n{"nombre":"nombre de la prenda","categoria":"tops|pantalones|faldas|vestidos|chaquetas|zapatos|accesorios|otros","color":"color principal en español","descripcion":"breve descripción del material o estilo","emoji":"emoji representativo"}\n\nSi no puedes acceder al link, infiere por el nombre del dominio o la URL.`}]}],
+        generationConfig:{temperature:0.1,maxOutputTokens:300}
+      })
+    });
+    const data=await res.json();
+    let txt=data?.candidates?.[0]?.content?.parts?.[0]?.text||'{}';
+    txt=txt.replace(/^```[a-z]*\n?/,'').replace(/\n?```$/,'').trim();
+    let info={};
+    try{info=JSON.parse(txt);}catch(e){const m=txt.match(/\{[\s\S]*?\}/);if(m)try{info=JSON.parse(m[0]);}catch(e2){}}
+    addPrendaPreview={photo:null,nombre:info.nombre||'Prenda',categoria:info.categoria||'otros',color:(info.color||'').toLowerCase(),descripcion:info.descripcion||'',emoji:info.emoji||getEmoji(info.categoria||'otros'),source:'link',sourceUrl:url};
+  }catch(e){
+    addPrendaPreview={photo:null,nombre:'Prenda',categoria:'otros',color:'',descripcion:'',emoji:'👕',source:'link',sourceUrl:url};
+  }
+  addPrendaLoading=false;render();
+}
+
+async function onScanFile(e){
+  const file=e.target.files[0];if(!file)return;
+  const b64=await fileToB64(file);
+  e.target.value='';
+  addPrendaLoading=true;addPrendaPreview=null;render();
+  try{
+    const b64data=b64.split(',')[1];const mt=file.type||'image/jpeg';
+    const res=await fetch('/.netlify/functions/gemini',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        contents:[{parts:[
+          {inline_data:{mime_type:mt,data:b64data}},
+          {text:'Esta es la foto de una etiqueta o código de barras de una prenda. Extrae toda la información visible. Responde SOLO con JSON sin markdown:\n{"nombre":"nombre o descripción de la prenda","categoria":"tops|pantalones|faldas|vestidos|chaquetas|zapatos|accesorios|otros","color":"color principal en español","descripcion":"composición o descripción breve","emoji":"emoji representativo","talla":"talla si visible"}'}
+        ]}],
+        generationConfig:{temperature:0.1,maxOutputTokens:400}
+      })
+    });
+    const data=await res.json();
+    let txt=data?.candidates?.[0]?.content?.parts?.[0]?.text||'{}';
+    txt=txt.replace(/^```[a-z]*\n?/,'').replace(/\n?```$/,'').trim();
+    let info={};
+    try{info=JSON.parse(txt);}catch(er){const m=txt.match(/\{[\s\S]*?\}/);if(m)try{info=JSON.parse(m[0]);}catch(e2){}}
+    addPrendaPreview={photo:b64,nombre:info.nombre||'Prenda escaneada',categoria:info.categoria||'otros',color:(info.color||'').toLowerCase(),descripcion:[info.descripcion,info.talla?`Talla ${info.talla}`:''].filter(Boolean).join(' · '),emoji:info.emoji||getEmoji(info.categoria||'otros'),source:'scan'};
+  }catch(e){
+    addPrendaPreview={photo:null,nombre:'Prenda escaneada',categoria:'otros',color:'',descripcion:'',emoji:'👕',source:'scan'};
+  }
+  addPrendaLoading=false;render();
+}
+
+async function onPrendaPhoto(e){
+  const file=e.target.files[0];if(!file)return;
+  const b64=await fileToB64(file);
+  e.target.value='';
+  addPrendaLoading=true;addPrendaPreview=null;render();
+  try{
+    const b64data=b64.split(',')[1];const mt=file.type||'image/jpeg';
+    const res=await fetch('/.netlify/functions/gemini',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        contents:[{parts:[
+          {inline_data:{mime_type:mt,data:b64data}},
+          {text:'Analiza esta foto de una prenda de ropa. Responde SOLO con JSON sin markdown:\n{"nombre":"descripción concisa de la prenda","categoria":"tops|pantalones|faldas|vestidos|chaquetas|zapatos|accesorios|otros","color":"color principal en español","descripcion":"material o estilo breve","emoji":"emoji representativo"}'}
+        ]}],
+        generationConfig:{temperature:0.1,maxOutputTokens:300}
+      })
+    });
+    const data=await res.json();
+    let txt=data?.candidates?.[0]?.content?.parts?.[0]?.text||'{}';
+    txt=txt.replace(/^```[a-z]*\n?/,'').replace(/\n?```$/,'').trim();
+    let info={};
+    try{info=JSON.parse(txt);}catch(er){const m=txt.match(/\{[\s\S]*?\}/);if(m)try{info=JSON.parse(m[0]);}catch(e2){}}
+    addPrendaPreview={photo:b64,nombre:info.nombre||'Prenda',categoria:info.categoria||'otros',color:(info.color||'').toLowerCase(),descripcion:info.descripcion||'',emoji:info.emoji||getEmoji(info.categoria||'otros'),source:'photo'};
+  }catch(e){
+    addPrendaPreview={photo:b64,nombre:'Prenda',categoria:'otros',color:'',descripcion:'',emoji:'👕',source:'photo'};
+  }
+  addPrendaLoading=false;render();
+}
+
+function updatePreviewNombre(v){if(addPrendaPreview)addPrendaPreview.nombre=v;}
+function updatePreviewCat(c){if(addPrendaPreview){addPrendaPreview.categoria=c;addPrendaPreview.emoji=getEmoji(c);}render();}
+function updatePreviewColor(c){if(addPrendaPreview)addPrendaPreview.color=c;render();}
+
+function saveAddPrenda(){
+  if(!addPrendaPreview)return;
+  const nameEl=document.getElementById('preview-name-edit');
+  if(nameEl)addPrendaPreview.nombre=nameEl.value.trim()||addPrendaPreview.nombre;
+  prendas.push({id:nextPrendaId++,nombre:addPrendaPreview.nombre,categoria:addPrendaPreview.categoria,descripcion:addPrendaPreview.descripcion,emoji:addPrendaPreview.emoji,color:addPrendaPreview.color||'',photo:addPrendaPreview.photo||null,source:addPrendaPreview.source,sourceUrl:addPrendaPreview.sourceUrl||null});
+  addPrendaPreview=null;addPrendaUrl='';
+  save();render();
+}
+
+// ── RENDER ────────────────────────────────────────────────────
 
 function render(){document.getElementById('content').innerHTML=currentTab==='looks'?renderLooks():renderPrendas();}
 
@@ -511,15 +661,74 @@ function renderPrendas(){
   let sp=prendas;
   if(searchQ.trim()){const q=searchQ.toLowerCase();sp=sp.filter(p=>p.nombre.toLowerCase().includes(q)||(p.descripcion||'').toLowerCase().includes(q));}
   if(filterColor)sp=sp.filter(p=>(p.color||'').toLowerCase().includes(filterColor));
-  let h=`<div class="search-wrap"><span class="search-ico">🔍</span><input type="text" placeholder="Buscar prenda…" value="${searchQ.replace(/"/g,'&quot;')}" oninput="searchQ=this.value;render()"></div>`;
+
+  // Sección añadir prenda manual
+  let h=`<div class="add-prenda-sec">
+    <div class="add-prenda-title">AÑADIR PRENDA AL ARMARIO</div>
+    <div class="add-method-tabs">
+      <div class="method-tab ${addPrendaMethod==='link'?'on':''}" onclick="setAddPrendaMethod('link')">
+        <span class="method-tab-ico">🔗</span><span class="method-tab-lbl">Link tienda</span>
+      </div>
+      <div class="method-tab ${addPrendaMethod==='scan'?'on':''}" onclick="setAddPrendaMethod('scan')">
+        <span class="method-tab-ico">📷</span><span class="method-tab-lbl">Escanear etiqueta</span>
+      </div>
+      <div class="method-tab ${addPrendaMethod==='photo'?'on':''}" onclick="setAddPrendaMethod('photo')">
+        <span class="method-tab-ico">🖼️</span><span class="method-tab-lbl">Foto prenda</span>
+      </div>
+    </div>`;
+
+  if(addPrendaMethod==='link'){
+    h+=`<div class="link-input-wrap">
+      <input id="add-prenda-link-in" class="link-input" type="url" inputmode="url" placeholder="https://zara.com/…" value="${addPrendaUrl.replace(/"/g,'&quot;')}" oninput="onAddPrendaUrlInput(this.value)" autocomplete="off" autocorrect="off" autocapitalize="none">
+      <button class="link-btn" onclick="loadPrendaFromLink()" ${addPrendaLoading?'disabled':''}>${addPrendaLoading?'<span class="spin">⚙️</span>':'Buscar'}</button>
+    </div>
+    <div class="link-hint">Pega el link de una prenda de Zara, H&M, Mango… La IA extraerá los datos.</div>`;
+  }else if(addPrendaMethod==='scan'){
+    h+=`<div class="scan-area" onclick="document.getElementById('file-scan').click()">
+      <div class="scan-ico-big">📷</div>
+      <div class="scan-lbl">Escanear etiqueta o código de barras</div>
+      <div class="scan-sub">Haz una foto a la etiqueta de la prenda</div>
+    </div>`;
+    if(addPrendaLoading)h+=`<div class="analyzing" style="margin-top:10px"><span class="spin">⚙️</span> Analizando etiqueta…</div>`;
+  }else if(addPrendaMethod==='photo'){
+    h+=`<div class="scan-area" onclick="document.getElementById('file-prenda-photo').click()">
+      <div class="scan-ico-big">🖼️</div>
+      <div class="scan-lbl">Foto de la prenda</div>
+      <div class="scan-sub">Haz una foto a la prenda y la IA identificará el tipo y color</div>
+    </div>`;
+    if(addPrendaLoading)h+=`<div class="analyzing" style="margin-top:10px"><span class="spin">⚙️</span> Analizando foto…</div>`;
+  }
+
+  if(addPrendaPreview&&!addPrendaLoading){
+    const co=COLOR_PALETTE.find(c=>c.name===addPrendaPreview.color);
+    h+=`<div class="preview-box">
+      ${addPrendaPreview.photo?`<img class="preview-img" src="${addPrendaPreview.photo}">`:`<div class="preview-img-pl">${addPrendaPreview.emoji}</div>`}
+      <div class="preview-info">
+        <input id="preview-name-edit" class="preview-edit" type="text" value="${addPrendaPreview.nombre.replace(/"/g,'&quot;')}" placeholder="Nombre de la prenda" oninput="updatePreviewNombre(this.value)">
+        <div class="preview-label">Categoría</div>
+        <div class="cat-sel-row">${CAT_ORDER.map(c=>`<button class="cat-btn ${addPrendaPreview.categoria===c?'on':''}" onclick="updatePreviewCat('${c}')">${CAT_LABELS[c].split(' ')[0]}</button>`).join('')}</div>
+        <div class="preview-label" style="margin-top:6px">Color</div>
+        <div class="col-sel-row">${COLOR_PALETTE.map(c=>`<div class="col-btn ${addPrendaPreview.color===c.name?'on':''}" style="background:${c.hex}" title="${c.name}" onclick="updatePreviewColor('${c.name}')"></div>`).join('')}</div>
+      </div>
+    </div>
+    <button class="add-prenda-save-btn" onclick="saveAddPrenda()">+ Guardar prenda</button>`;
+  }
+
+  h+=`</div>`;
+
+  // Filtros
+  h+=`<div class="search-wrap"><span class="search-ico">🔍</span><input type="text" placeholder="Buscar prenda…" value="${searchQ.replace(/"/g,'&quot;')}" oninput="searchQ=this.value;render()"></div>`;
   h+=`<div class="color-chips"><button class="chip ${!filterColor?'on':''}" style="font-size:11px;padding:5px 11px" onclick="filterColor='';render()">Todos</button>`;
   COLOR_PALETTE.forEach(c=>{h+=`<div class="color-chip ${filterColor===c.name?'on':''}" style="background:${c.hex}" title="${c.name}" onclick="filterColor=filterColor==='${c.name}'?'':'${c.name}';render()"></div>`;});
   h+=`</div>`;
-  if(prendas.length===0){h+=`<div class="empty"><div class="empty-ico">🧥</div><div class="empty-t">Sin prendas todavía</div><div class="empty-s">Sube un look en "Looks" y la IA separará las prendas aquí.</div></div>`;return h;}
+
+  if(prendas.length===0){h+=`<div class="empty"><div class="empty-ico">🧥</div><div class="empty-t">Sin prendas todavía</div><div class="empty-s">Añade prendas desde un link, escaneando la etiqueta, o sube un look en "Looks".</div></div>`;return h;}
+
   h+=`<div class="suggest-sec"><div class="suggest-title">SUGERIR LOOK POR OCASIÓN</div>
   <div class="suggest-row">${occs.map(o=>`<button class="s-chip ${suggestOcc===o?'on':''}" onclick="suggestOcc='${o}';suggestResult='';render()">${o}</button>`).join('')}</div>
   <button class="suggest-btn" onclick="getSuggestion()" ${!suggestOcc||suggesting?'disabled':''}>${suggesting?'⚙️ Generando…':'✦ Sugerir combinación'}</button>
   ${suggestResult?`<div class="suggest-result">${suggestResult}</div>`:''}</div>`;
+
   h+=`<div class="lb"><div class="lb-stripe"></div><div class="lb-inner"><div class="lb-title">CREAR LOOK HIPOTÉTICO</div>
   <div class="lb-slots">${SLOT_CATS.map((sc,i)=>{const pid=slotSel[i],pr=pid?prendas.find(p=>p.id===pid):null;
     return `<div class="slot ${pr?'filled':''}" onclick="openPicker(${i})">
@@ -529,6 +738,7 @@ function renderPrendas(){
     </div>`;}).join('')}</div>
   <div class="lb-row"><input id="lb-name-in" class="lb-input" type="text" placeholder="Nombre del look…" autocomplete="off">
   <button class="lb-save" onclick="saveLookFromPrendas()">Guardar</button></div></div></div>`;
+
   const activeCats=CAT_ORDER.filter(c=>sp.some(p=>p.categoria===c));
   if(!activeCats.length&&(searchQ||filterColor)){h+=`<div class="empty"><div class="empty-ico">🔍</div><div class="empty-t">Sin resultados</div><div class="empty-s">Prueba otro color o búsqueda.</div></div>`;}
   activeCats.forEach(cat=>{
