@@ -485,7 +485,7 @@ async function getSuggestion(){
 }
 
 // ── AÑADIR PRENDA ────────────────────────────────────────────
-function setAddPrendaMethod(m){addPrendaMethod=m;addPrendaPreview=null;render();if(m==='link')setTimeout(()=>{const i=document.getElementById('add-link-in');if(i)i.focus();},80);}
+function setAddPrendaMethod(m){addPrendaMethod=m;addPrendaPreview=null;render();}
 
 async function loadPrendaFromLink(){
   const url=document.getElementById('add-link-in')?.value?.trim();
@@ -547,7 +547,7 @@ async function onPrendaPhoto(e){
   try{
     const b64data=b64.split(',')[1],mt=file.type||'image/jpeg';
     const res=await fetch('/.netlify/functions/gemini',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:mt,data:b64data}},{text:'Analiza esta foto de una prenda de ropa. Identifica con precisión el tipo, colores y características. Responde SOLO con JSON sin markdown ni texto extra:\n{"nombre":"descripción concisa (ej: camiseta manga corta rayas, vaquero skinny)","categoria":"tops|pantalones|faldas|vestidos|chaquetas|zapatos|accesorios|otros","colors":["color1","color2"],"descripcion":"material o estilo observable","emoji":"emoji representativo"}\n- colors: array con todos los colores visibles en español'}]}],generationConfig:{temperature:0.1,maxOutputTokens:400}})});
+      body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:mt,data:b64data}},{text:'Analiza esta imagen. Puede ser una foto de una prenda O una captura de pantalla de una tienda online. LEE todo el texto visible en la imagen (nombre del producto, marca, descripción). Responde SOLO con JSON sin markdown ni texto extra:\n{"nombre":"si hay texto visible usa el nombre exacto del producto; si no, descripción visual concisa","categoria":"tops|pantalones|faldas|vestidos|chaquetas|zapatos|accesorios|otros","colors":["color1","color2"],"descripcion":"material, estilo o detalles visibles o leídos","emoji":"emoji representativo"}\n- Prioriza siempre el texto escrito en la imagen sobre la interpretación visual\n- colors: todos los colores en español'}]}],generationConfig:{temperature:0.1,maxOutputTokens:400}})});
     const data=await res.json();
     let txt=data?.candidates?.[0]?.content?.parts?.[0]?.text||'{}';
     txt=txt.replace(/^```[a-z]*\n?/,'').replace(/\n?```$/,'').trim();
@@ -816,33 +816,23 @@ function renderPrendas(){
   let h=`<div class="add-prenda-sec">
     <div class="add-prenda-title">AÑADIR PRENDA AL ARMARIO</div>
     <div class="add-method-tabs">
-      <div class="method-tab ${addPrendaMethod==='link'?'on':''}" onclick="setAddPrendaMethod('link')">
-        <span class="method-tab-ico">🔗</span><span class="method-tab-lbl">Link tienda</span>
-      </div>
       <div class="method-tab ${addPrendaMethod==='scan'?'on':''}" onclick="setAddPrendaMethod('scan')">
         <span class="method-tab-ico">📷</span><span class="method-tab-lbl">Escanear etiqueta</span>
       </div>
       <div class="method-tab ${addPrendaMethod==='photo'?'on':''}" onclick="setAddPrendaMethod('photo')">
-        <span class="method-tab-ico">🖼️</span><span class="method-tab-lbl">Foto prenda</span>
+        <span class="method-tab-ico">🖼️</span><span class="method-tab-lbl">Foto / captura</span>
       </div>
     </div>`;
 
-  if(addPrendaMethod==='link'){
-    h+=`<div style="display:flex;gap:8px">
-      <input id="add-link-in" class="preview-edit" style="flex:1;margin-bottom:0" type="url" inputmode="url" placeholder="https://zara.com/…" autocomplete="off" autocorrect="off" autocapitalize="none">
-      <button class="add-prenda-save-btn" style="width:auto;margin-top:0;padding:10px 14px" onclick="loadPrendaFromLink()" ${addPrendaLoading?'disabled':''}>${addPrendaLoading?'<span class="spin">⚙️</span>':'Buscar'}</button>
-    </div>
-    <div style="font-size:11px;color:var(--muted);margin-top:6px">Pega el link de Zara, H&amp;M, Mango… La IA extraerá la foto y el nombre.</div>`;
-    if(addPrendaLoading)h+=`<div class="analyzing" style="margin-top:10px"><span class="spin">⚙️</span> Obteniendo datos de la tienda…</div>`;
-  }else if(addPrendaMethod==='scan'){
+  if(addPrendaMethod==='scan'){
     h+=`<div class="scan-area" onclick="document.getElementById('file-scan').click()">
       <div class="scan-ico-big">📷</div><div class="scan-lbl">Escanear etiqueta o código de barras</div>
       <div class="scan-sub">Haz una foto a la etiqueta de la prenda</div></div>`;
     if(addPrendaLoading)h+=`<div class="analyzing" style="margin-top:10px"><span class="spin">⚙️</span> Analizando etiqueta…</div>`;
   }else{
     h+=`<div class="scan-area" onclick="document.getElementById('file-prenda-photo').click()">
-      <div class="scan-ico-big">🖼️</div><div class="scan-lbl">Foto de la prenda</div>
-      <div class="scan-sub">Haz una foto a la prenda y la IA identificará el tipo y color</div></div>`;
+      <div class="scan-ico-big">🖼️</div><div class="scan-lbl">Foto de la prenda o captura de pantalla</div>
+      <div class="scan-sub">Funciona con fotos de la prenda o capturas de la web de la tienda — la IA leerá el nombre y los detalles</div></div>`;
     if(addPrendaLoading)h+=`<div class="analyzing" style="margin-top:10px"><span class="spin">⚙️</span> Analizando foto…</div>`;
   }
 
