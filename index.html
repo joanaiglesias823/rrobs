@@ -320,6 +320,8 @@ let climaData=null,climaLoading=false,climaResult='',climaGenerating=false,clima
 
 // Maleta
 let maletaItems=new Set(),maletaDest='',maletaSuggestion='',maletaGenerating=false;
+let viajes=[],nextViajeId=1,viajeActivo=null; // viaje:{id,nombre,items:[ids]}
+let showStats=false;
 
 function save(){
   try{
@@ -329,6 +331,8 @@ function save(){
     localStorage.setItem('robs_ids',JSON.stringify({nl:nextLookId,np:nextPrendaId}));
     localStorage.setItem('robs_maleta',JSON.stringify([...maletaItems]));
     localStorage.setItem('robs_maleta_dest',maletaDest);
+    localStorage.setItem('robs_viajes',JSON.stringify(viajes));
+    localStorage.setItem('robs_viaje_id',nextViajeId);
   }catch(e){}
 }
 function load(){
@@ -342,6 +346,8 @@ function load(){
     if(ids){const d=JSON.parse(ids);nextLookId=d.nl||1;nextPrendaId=d.np||1;}
     if(m)maletaItems=new Set(JSON.parse(m));
     if(md)maletaDest=md;
+    const vj=localStorage.getItem('robs_viajes'),vid=localStorage.getItem('robs_viaje_id');
+    if(vj)viajes=JSON.parse(vj);if(vid)nextViajeId=parseInt(vid)||1;
   }catch(e){}
 }
 load();
@@ -386,7 +392,7 @@ async function analyzePhoto(file){
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({contents:[{parts:[
         {inline_data:{mime_type:mt,data:b64}},
-        {text:'Eres experto en moda. Analiza esta foto e identifica TODAS las prendas y accesorios visibles. Responde SOLO con array JSON sin texto extra ni markdown:\n[{"nombre":"nombre descriptivo","categoria":"tops|pantalones|faldas|vestidos|chaquetas|zapatos|accesorios|otros","descripcion":"color y material","emoji":"emoji","color":"color principal en español"}]\nIncluye zapatos, bolsos, cinturones, accesorios. Si no hay ropa devuelve [].'}
+        {text:'Eres experto en moda. Analiza esta foto e identifica TODAS las prendas y accesorios visibles. Es OBLIGATORIO asignar un nombre descriptivo a cada prenda. Responde SOLO con array JSON sin texto extra ni markdown:\n[{"nombre":"adjetivo color + tipo (ej: camiseta blanca de algodón, pantalón vaquero azul)","categoria":"tops|pantalones|faldas|vestidos|chaquetas|zapatos|accesorios|otros","descripcion":"material o estilo","emoji":"emoji","color":"color principal en español"}]\nIncluye zapatos, bolsos, cinturones, accesorios. Cada prenda DEBE tener nombre. Si no hay ropa devuelve [].'}
       ]}],generationConfig:{temperature:0.1,maxOutputTokens:1000}})
     });
     const data=await res.json();
@@ -448,9 +454,9 @@ function saveLook(){
   draft.detected.filter(it=>draft.selected[it.id]).forEach(it=>{prendas.push({id:nextPrendaId++,nombre:it.nombre,categoria:it.categoria,descripcion:it.descripcion,emoji:it.emoji,color:it.color||'',colors:[it.color||''].filter(Boolean),ocasiones:[...draft.occasions],photo:draft.photos[0]||null,fromLook:lid,fav:false});});
   showAdd=false;save();render();
 }
-function delLook(id,e){e.stopPropagation();looks=looks.filter(l=>l.id!==id);save();render();}
+function delLook(id,e){e.stopPropagation();if(!confirm('¿Eliminar este look?'))return;looks=looks.filter(l=>l.id!==id);save();render();}
 function toggleFavLook(id,e){e.stopPropagation();const l=looks.find(x=>x.id===id);if(l)l.fav=!l.fav;save();render();}
-function delPrenda(id,e){e.stopPropagation();e.preventDefault();prendas=prendas.filter(p=>p.id!==id);maletaItems.delete(id);save();render();}
+function delPrenda(id,e){e.stopPropagation();e.preventDefault();if(!confirm('¿Eliminar esta prenda?'))return;prendas=prendas.filter(p=>p.id!==id);maletaItems.delete(id);save();render();}
 function toggleFavPrenda(id,e){e.stopPropagation();const p=prendas.find(x=>x.id===id);if(p)p.fav=!p.fav;save();render();}
 function openDetail(look){detailLook=look;render();}
 function closeDetail(){detailLook=null;editingLookId=null;render();}
@@ -479,8 +485,43 @@ async function getSuggestion(){
 }
 
 // ── AÑADIR PRENDA ────────────────────────────────────────────
-function setAddPrendaMethod(m){addPrendaMethod=m;addPrendaPreview=null;render();if(m==='scan'||m==='photo'){};}
+function setAddPrendaMethod(m){addPrendaMethod=m;addPrendaPreview=null;render();if(m==='link')setTimeout(()=>{const i=document.getElementById('add-link-in');if(i)i.focus();},80);}
 
+async function loadPrendaFromLink(){
+  const url=document.getElementById('add-link-in')?.value?.trim();
+  if(!url)return;
+  addPrendaLoading=true;addPrendaPreview=null;render();
+  try{
+    // 1. Scrape og:image i og:title
+    const sr=await fetch('/.netlify/functions/scrape',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})});
+    const sd=await sr.json();
+    const ogImage=sd.image||null;
+    const ogTitle=sd.title||'';
+
+    // 2. Convertir imatge a base64 si existeix
+    let photoB64=null;
+    if(ogImage){
+      try{
+        const ir=await fetch(ogImage);
+        const blob=await ir.blob();
+        photoB64=await fileToB64(new File([blob],'p.jpg',{type:blob.type||'image/jpeg'}));
+      }catch(e){}
+    }
+
+    // 3. Gemini classifica el títol
+    const res=await fetch('/.netlify/functions/gemini',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:`Prenda de tienda online. Título: "${ogTitle}". URL: ${url}\n\nClasifica esta prenda. Responde SOLO con JSON sin markdown:\n{"nombre":"nombre descriptivo conciso","categoria":"tops|pantalones|faldas|vestidos|chaquetas|zapatos|accesorios|otros","colors":["color1"],"descripcion":"material o estilo si deducible","emoji":"emoji"}`}]}],generationConfig:{temperature:0.1,maxOutputTokens:200}})});
+    const data=await res.json();
+    let txt=data?.candidates?.[0]?.content?.parts?.[0]?.text||'{}';
+    txt=txt.replace(/^```[a-z]*\n?/,'').replace(/\n?```$/,'').trim();
+    let info={};try{info=JSON.parse(txt);}catch(e){const m=txt.match(/\{[\s\S]*?\}/);if(m)try{info=JSON.parse(m[0]);}catch(e2){}}
+    const colors=Array.isArray(info.colors)&&info.colors.length?info.colors.map(c=>c.toLowerCase()):[];
+    addPrendaPreview={photo:photoB64,nombre:info.nombre||ogTitle||'Prenda',categoria:info.categoria||'otros',colors,descripcion:info.descripcion||'',emoji:info.emoji||'👕',ocasiones:[],source:'link',sourceUrl:url};
+  }catch(e){
+    addPrendaPreview={photo:null,nombre:'Prenda',categoria:'otros',colors:[],descripcion:'',emoji:'👕',ocasiones:[],source:'link',sourceUrl:url};
+  }
+  addPrendaLoading=false;render();
+}
 async function onScanFile(e){
   const file=e.target.files[0];if(!file)return;
   const b64=await fileToB64(file);e.target.value='';
@@ -569,6 +610,32 @@ async function suggestByClima(){
 
 // ── MALETA ───────────────────────────────────────────────────
 function toggleMaleta(id){if(maletaItems.has(id))maletaItems.delete(id);else maletaItems.add(id);save();render();}
+
+// ── VIATGES ──────────────────────────────────────────────────
+function crearViaje(){const nom=document.getElementById('viaje-nom-in')?.value?.trim();if(!nom)return;viajes.push({id:nextViajeId++,nombre:nom,items:[],dest:''});save();render();}
+function delViaje(id){if(!confirm('¿Eliminar este viaje?'))return;viajes=viajes.filter(v=>v.id!==id);if(viajeActivo===id)viajeActivo=null;save();render();}
+function abrirViaje(id){viajeActivo=id;maletaSuggestion='';render();}
+function cerrarViaje(){viajeActivo=null;render();}
+function toggleViajeItem(prendaId){
+  const v=viajes.find(x=>x.id===viajeActivo);if(!v)return;
+  const i=v.items.indexOf(prendaId);if(i>=0)v.items.splice(i,1);else v.items.push(prendaId);
+  save();render();
+}
+async function suggestViaje(){
+  const v=viajes.find(x=>x.id===viajeActivo);if(!v||v.items.length<2||maletaGenerating)return;
+  maletaGenerating=true;maletaSuggestion='';render();
+  try{
+    const items=prendas.filter(p=>v.items.includes(p.id));
+    const lista=items.map(p=>`- ${p.nombre} (${p.categoria})`).join('\n');
+    const dest=document.getElementById('viaje-dest-in')?.value?.trim()||v.dest||'el viaje';
+    v.dest=dest;save();
+    const res=await fetch('/.netlify/functions/gemini',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:`Voy a ${dest} con estas prendas:\n${lista}\n\nSugiere 3 looks diferentes combinando solo estas prendas. Máximo 80 palabras en español.`}]}],generationConfig:{temperature:0.7,maxOutputTokens:250}})});
+    const data=await res.json();
+    maletaSuggestion=data?.candidates?.[0]?.content?.parts?.[0]?.text||'Sin sugerencia.';
+  }catch(e){maletaSuggestion='Error de conexión.';}
+  maletaGenerating=false;render();
+}
 
 async function suggestMaleta(){
   if(maletaItems.size<2||maletaGenerating)return;
@@ -742,12 +809,16 @@ function renderPrendas(){
   let sp=prendas;
   if(searchQ.trim()){const q=searchQ.toLowerCase();sp=sp.filter(p=>p.nombre.toLowerCase().includes(q)||(p.descripcion||'').toLowerCase().includes(q));}
   if(filterColor)sp=sp.filter(p=>(p.colors||[p.color||'']).some(c=>c.includes(filterColor)));
-  if(filterOcc)sp=sp.filter(p=>(p.ocasiones||[]).includes(filterOcc));
+  if(filterOcc==='favs')sp=sp.filter(p=>p.fav);
+  else if(filterOcc)sp=sp.filter(p=>(p.ocasiones||[]).includes(filterOcc));
 
   // Secció afegir prenda
   let h=`<div class="add-prenda-sec">
     <div class="add-prenda-title">AÑADIR PRENDA AL ARMARIO</div>
     <div class="add-method-tabs">
+      <div class="method-tab ${addPrendaMethod==='link'?'on':''}" onclick="setAddPrendaMethod('link')">
+        <span class="method-tab-ico">🔗</span><span class="method-tab-lbl">Link tienda</span>
+      </div>
       <div class="method-tab ${addPrendaMethod==='scan'?'on':''}" onclick="setAddPrendaMethod('scan')">
         <span class="method-tab-ico">📷</span><span class="method-tab-lbl">Escanear etiqueta</span>
       </div>
@@ -756,7 +827,14 @@ function renderPrendas(){
       </div>
     </div>`;
 
-  if(addPrendaMethod==='scan'){
+  if(addPrendaMethod==='link'){
+    h+=`<div style="display:flex;gap:8px">
+      <input id="add-link-in" class="preview-edit" style="flex:1;margin-bottom:0" type="url" inputmode="url" placeholder="https://zara.com/…" autocomplete="off" autocorrect="off" autocapitalize="none">
+      <button class="add-prenda-save-btn" style="width:auto;margin-top:0;padding:10px 14px" onclick="loadPrendaFromLink()" ${addPrendaLoading?'disabled':''}>${addPrendaLoading?'<span class="spin">⚙️</span>':'Buscar'}</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px">Pega el link de Zara, H&amp;M, Mango… La IA extraerá la foto y el nombre.</div>`;
+    if(addPrendaLoading)h+=`<div class="analyzing" style="margin-top:10px"><span class="spin">⚙️</span> Obteniendo datos de la tienda…</div>`;
+  }else if(addPrendaMethod==='scan'){
     h+=`<div class="scan-area" onclick="document.getElementById('file-scan').click()">
       <div class="scan-ico-big">📷</div><div class="scan-lbl">Escanear etiqueta o código de barras</div>
       <div class="scan-sub">Haz una foto a la etiqueta de la prenda</div></div>`;
@@ -793,6 +871,7 @@ function renderPrendas(){
   h+=`<div class="search-wrap"><span class="search-ico">🔍</span><input type="text" placeholder="Buscar prenda…" value="${searchQ.replace(/"/g,'&quot;')}" oninput="searchQ=this.value;render()"></div>`;
   h+=`<div class="chips">
     <button class="chip ${!filterOcc?'on':''}" onclick="filterOcc='';render()">Todas</button>
+    <button class="chip ${filterOcc==='favs'?'on':''}" onclick="filterOcc='favs';render()">⭐ Favs</button>
     ${occs.map(o=>`<button class="chip ${filterOcc===o?'on':''}" onclick="filterOcc='${o}';render()">${o}</button>`).join('')}
   </div>`;
   h+=`<div class="color-chips"><button class="chip ${!filterColor?'on':''}" style="font-size:11px;padding:5px 11px" onclick="filterColor='';render()">Todos</button>`;
@@ -826,7 +905,7 @@ function renderPrendas(){
       return `<div class="pcard ${p.fav?'fav-pcard':''}">
         ${p.photo?`<img class="pphoto" src="${p.photo}" loading="lazy">`:`<div class="pph-pl">${p.emoji||'👕'}</div>`}
         <button class="pfav" onclick="toggleFavPrenda(${p.id},event)">${p.fav?'⭐':'☆'}</button>
-        <div class="pmeta"><div class="pname">${co?`<span class="color-dot" style="background:${co.hex}"></span>`:''}${p.nombre}</div><div class="pdesc">${p.descripcion||''}</div></div>
+        <div class="pmeta"><div class="pname">${co?`<span class="color-dot" style="background:${co.hex}"></span>`:''}${p.nombre}</div><div class="pdesc">${p.descripcion||''}</div>${p.sourceUrl?`<a href="${p.sourceUrl}" target="_blank" onclick="event.stopPropagation()" style="font-size:9px;color:var(--or);text-decoration:none">🔗 ver en tienda</a>`:''}</div>
         <button class="pdelx" onclick="delPrenda(${p.id},event)">×</button></div>`;}).join('')}</div></div>`;
   });
   if(pickerSlot!==null)h+=renderPicker();
@@ -838,13 +917,18 @@ function renderStats(){
   const favs=prendas.filter(p=>p.fav).length;
   const cats=CAT_ORDER.map(c=>({c,n:prendas.filter(p=>p.categoria===c).length})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
   const topCat=cats[0]?CAT_LABELS[cats[0].c]:'—';
-  return `<div class="stats-sec"><div class="stats-title">ESTADÍSTICAS</div>
-  <div class="stats-grid">
-    <div class="stat-box"><div class="stat-n">${prendas.length}</div><div class="stat-l">prendas totales</div></div>
-    <div class="stat-box"><div class="stat-n">${looks.length}</div><div class="stat-l">looks guardados</div></div>
-    <div class="stat-box"><div class="stat-n">${favs}</div><div class="stat-l">favoritas</div></div>
-    <div class="stat-box"><div class="stat-n" style="font-size:14px">${topCat}</div><div class="stat-l">categoría principal</div></div>
-  </div></div>`;
+  return `<div class="stats-sec">
+    <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="showStats=!showStats;render()">
+      <div class="stats-title">ESTADÍSTICAS</div>
+      <span style="font-size:14px;color:var(--muted)">${showStats?'▲':'▼'}</span>
+    </div>
+    ${showStats?`<div class="stats-grid" style="margin-top:10px">
+      <div class="stat-box"><div class="stat-n">${prendas.length}</div><div class="stat-l">prendas totales</div></div>
+      <div class="stat-box"><div class="stat-n">${looks.length}</div><div class="stat-l">looks guardados</div></div>
+      <div class="stat-box"><div class="stat-n">${favs}</div><div class="stat-l">favoritas</div></div>
+      <div class="stat-box"><div class="stat-n" style="font-size:14px">${topCat}</div><div class="stat-l">categoría principal</div></div>
+    </div>`:''}
+  </div>`;
 }
 
 function renderPicker(){
@@ -858,45 +942,69 @@ function renderPicker(){
 }
 
 function renderMaleta(){
-  const total=maletaItems.size;
-  let h=`<div class="maleta-sec">
-    <div class="maleta-header">
-      <div class="maleta-title">🧳 MI MALETA</div>
-      <div class="maleta-count">${total} prenda${total!==1?'s':''}</div>
-    </div>
-    <div class="maleta-dest-row">
-      <input id="maleta-dest-in" class="maleta-input" type="text" placeholder="Destino (ej: París, playa…)" value="${maletaDest.replace(/"/g,'&quot;')}" oninput="maletaDest=this.value" autocomplete="off">
-      <button class="maleta-ia-btn" onclick="suggestMaleta()" ${maletaItems.size<2||maletaGenerating?'disabled':''}>${maletaGenerating?'<span class="spin">⚙️</span>':'✦ Combinar'}</button>
+  // Vista viatge actiu
+  if(viajeActivo!==null){
+    const v=viajes.find(x=>x.id===viajeActivo);
+    if(!v){viajeActivo=null;render();return '';}
+    let h=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <button onclick="cerrarViaje()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">←</button>
+      <div style="font-family:var(--font-d);font-size:16px;flex:1">🧳 ${v.nombre}</div>
+      <button onclick="delViaje(${v.id})" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted)">🗑</button>
     </div>`;
-
-  if(maletaSuggestion){h+=`<div class="maleta-suggest-result">${maletaSuggestion}</div>`;}
-  h+=`</div>`;
-
-  // Clima a Maleta
-  h+=renderClima();
-
-  // Llistat de totes les prendas per seleccionar
-  if(prendas.length===0){
-    h+=`<div class="empty"><div class="empty-ico">🧳</div><div class="empty-t">Sin prendas</div><div class="empty-s">Añade prendas en la pestaña Prendas para llevarlas en tu maleta.</div></div>`;
+    h+=`<div class="maleta-sec">
+      <div class="maleta-dest-row">
+        <input id="viaje-dest-in" class="maleta-input" type="text" placeholder="Destino (ej: París, playa…)" value="${(v.dest||'').replace(/"/g,'&quot;')}" oninput="viajes.find(x=>x.id===viajeActivo).dest=this.value;save()" autocomplete="off">
+        <button class="maleta-ia-btn" onclick="suggestViaje()" ${v.items.length<2||maletaGenerating?'disabled':''}>${maletaGenerating?'<span class="spin">⚙️</span>':'✦ Combinar'}</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">${v.items.length} prenda${v.items.length!==1?'s':''} seleccionadas</div>
+      ${maletaSuggestion?`<div class="maleta-suggest-result" style="margin-top:8px">${maletaSuggestion}</div>`:''}
+    </div>`;
+    h+=renderClima();
+    if(prendas.length===0){h+=`<div class="empty"><div class="empty-ico">🧳</div><div class="empty-t">Sin prendas</div></div>`;return h;}
+    h+=`<div class="search-wrap"><span class="search-ico">🔍</span><input type="text" placeholder="Buscar prenda…" value="${searchQ.replace(/"/g,'&quot;')}" oninput="searchQ=this.value;render()"></div>`;
+    let sp=prendas;
+    if(searchQ.trim()){const q=searchQ.toLowerCase();sp=sp.filter(p=>p.nombre.toLowerCase().includes(q));}
+    const activeCats=CAT_ORDER.filter(c=>sp.some(p=>p.categoria===c));
+    activeCats.forEach(cat=>{
+      const items=sp.filter(p=>p.categoria===cat);
+      h+=`<div style="margin-bottom:16px"><div class="pcat-hdr"><div class="pcat-stripe"></div><span class="pcat-name">${CAT_LABELS[cat]}</span></div>
+      <div class="maleta-grid">${items.map(p=>{
+        const inV=v.items.includes(p.id);
+        return `<div class="mcard ${inV?'in':''}" onclick="toggleViajeItem(${p.id})">
+          ${p.photo?`<img class="mphoto" src="${p.photo}" loading="lazy">`:`<div class="mph-pl">${p.emoji||'👕'}</div>`}
+          ${inV?`<div class="mcheck">✓</div>`:''}
+          <div class="mmeta"><div class="mname">${p.nombre}</div></div>
+        </div>`;}).join('')}</div></div>`;
+    });
     return h;
   }
 
-  h+=`<div class="search-wrap"><span class="search-ico">🔍</span><input type="text" placeholder="Buscar prenda…" value="${searchQ.replace(/"/g,'&quot;')}" oninput="searchQ=this.value;render()"></div>`;
+  // Vista llista de viatges
+  let h=`<div class="maleta-sec">
+    <div class="maleta-header"><div class="maleta-title">🧳 MIS VIAJES</div><div class="maleta-count">${viajes.length}</div></div>
+    <div class="maleta-dest-row">
+      <input id="viaje-nom-in" class="maleta-input" type="text" placeholder="Nombre del viaje (ej: Verano París)" autocomplete="off">
+      <button class="maleta-ia-btn" onclick="crearViaje()">+ Crear</button>
+    </div>
+  </div>`;
 
-  let sp=prendas;
-  if(searchQ.trim()){const q=searchQ.toLowerCase();sp=sp.filter(p=>p.nombre.toLowerCase().includes(q));}
+  if(viajes.length===0){
+    h+=`<div class="empty"><div class="empty-ico">🧳</div><div class="empty-t">Sin viajes</div><div class="empty-s">Crea un viaje para organizar qué ropa llevas y combinar looks.</div></div>`;
+    return h;
+  }
 
-  const activeCats=CAT_ORDER.filter(c=>sp.some(p=>p.categoria===c));
-  activeCats.forEach(cat=>{
-    const items=sp.filter(p=>p.categoria===cat);
-    h+=`<div style="margin-bottom:16px"><div class="pcat-hdr"><div class="pcat-stripe"></div><span class="pcat-name">${CAT_LABELS[cat]}</span></div>
-    <div class="maleta-grid">${items.map(p=>{
-      const inM=maletaItems.has(p.id);
-      return `<div class="mcard ${inM?'in':''}" onclick="toggleMaleta(${p.id})">
-        ${p.photo?`<img class="mphoto" src="${p.photo}" loading="lazy">`:`<div class="mph-pl">${p.emoji||'👕'}</div>`}
-        ${inM?`<div class="mcheck">✓</div>`:''}
-        <div class="mmeta"><div class="mname">${p.nombre}</div></div>
-      </div>`;}).join('')}</div></div>`;
+  viajes.forEach(v=>{
+    const n=v.items.length;
+    h+=`<div class="maleta-sec" style="cursor:pointer" onclick="abrirViaje(${v.id})">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:24px">🧳</span>
+        <div style="flex:1">
+          <div style="font-family:var(--font-d);font-size:14px;color:var(--ink)">${v.nombre}</div>
+          <div style="font-size:12px;color:var(--muted)">${v.dest||'Sin destino'} · ${n} prenda${n!==1?'s':''}</div>
+        </div>
+        <span style="font-size:18px;color:var(--muted)">›</span>
+      </div>
+    </div>`;
   });
   return h;
 }
