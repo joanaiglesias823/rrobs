@@ -276,7 +276,7 @@ let suggestOcc='',suggestResult='',suggesting=false;
 let editingLookId=null,showAddOcc=false;
 
 // Estado añadir prenda manual
-let addPrendaMethod='link';
+let addPrendaMethod='scan';
 let addPrendaUrl='';
 let addPrendaPreview=null;
 let addPrendaLoading=false;
@@ -666,9 +666,6 @@ function renderPrendas(){
   let h=`<div class="add-prenda-sec">
     <div class="add-prenda-title">AÑADIR PRENDA AL ARMARIO</div>
     <div class="add-method-tabs">
-      <div class="method-tab ${addPrendaMethod==='link'?'on':''}" onclick="setAddPrendaMethod('link')">
-        <span class="method-tab-ico">🔗</span><span class="method-tab-lbl">Link tienda</span>
-      </div>
       <div class="method-tab ${addPrendaMethod==='scan'?'on':''}" onclick="setAddPrendaMethod('scan')">
         <span class="method-tab-ico">📷</span><span class="method-tab-lbl">Escanear etiqueta</span>
       </div>
@@ -677,13 +674,7 @@ function renderPrendas(){
       </div>
     </div>`;
 
-  if(addPrendaMethod==='link'){
-    h+=`<div class="link-input-wrap">
-      <input id="add-prenda-link-in" class="link-input" type="url" inputmode="url" placeholder="https://zara.com/…" value="${addPrendaUrl.replace(/"/g,'&quot;')}" oninput="onAddPrendaUrlInput(this.value)" autocomplete="off" autocorrect="off" autocapitalize="none">
-      <button class="link-btn" onclick="loadPrendaFromLink()" ${addPrendaLoading?'disabled':''}>${addPrendaLoading?'<span class="spin">⚙️</span>':'Buscar'}</button>
-    </div>
-    <div class="link-hint">Pega el link de una prenda de Zara, H&M, Mango… La IA extraerá los datos.</div>`;
-  }else if(addPrendaMethod==='scan'){
+  if(addPrendaMethod==='scan'){
     h+=`<div class="scan-area" onclick="document.getElementById('file-scan').click()">
       <div class="scan-ico-big">📷</div>
       <div class="scan-lbl">Escanear etiqueta o código de barras</div>
